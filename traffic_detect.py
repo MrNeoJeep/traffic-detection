@@ -204,6 +204,8 @@ def draw(image, boxes, scores, classes):
                     (top, left - 6),
                     cv2.FONT_HERSHEY_SIMPLEX,
                     0.6, (0, 0, 255), 2)
+        
+        return str(CLASSES[cl]) + ',' + str(top) +',' + str(left) + ',' +str(right) + ',' +str(bottom)
 
 
 def letterbox(im, new_shape=(640, 640), color=(0, 0, 0)):
@@ -284,12 +286,57 @@ if __name__ == '__main__':
         exit(ret)
     print('done')
 
+    capture = cv2.VideoCapture('video.mp4')  # 读取视频
+    count = 0  # 用于记录帧数
+    ret, img = capture.read()  # 读入
     # Set inputs
-    img = cv2.imread(IMG_PATH)
+    #img = cv2.imread(IMG_PATH)
     # img, ratio, (dw, dh) = letterbox(img, new_shape=(IMG_SIZE, IMG_SIZE))
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    img = cv2.resize(img, (IMG_SIZE, IMG_SIZE))
+    #img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    #img = cv2.resize(img, (IMG_SIZE, IMG_SIZE))
 
+    if os.path.exists(r'result.txt'):
+        os.remove(r'result.txt')
+
+    with open('result.txt','a') as f:    #将结果保存到result.txt内
+        while(ret):
+
+            img_1, ratio, (dw, dh) = letterbox(img, new_shape=(IMG_SIZE, IMG_SIZE))
+            img_1 = cv2.cvtColor(img_1, cv2.COLOR_BGR2RGB)
+
+            # 模型运行
+            print('--> Running model')
+            time1=time.time()
+            outputs = rknn.inference(inputs=[img_1])
+            input0_data = outputs[0]
+            input1_data = outputs[1]
+            input2_data = outputs[2]
+
+            input0_data = input0_data.reshape([3, -1] + list(input0_data.shape[-2:]))
+            input1_data = input1_data.reshape([3, -1] + list(input1_data.shape[-2:]))
+            input2_data = input2_data.reshape([3, -1] + list(input2_data.shape[-2:]))
+
+            input_data = list()
+            input_data.append(np.transpose(input0_data, (1, 2, 0, 3)))
+            input_data.append(np.transpose(input1_data, (1, 2, 0, 3)))
+            input_data.append(np.transpose(input2_data, (1, 2, 0, 3)))
+            
+            time2=time.time()
+            #print((time2-time1)*1000)   #注意time.time()结果单位为秒，输出要求单位为毫秒
+
+            boxes, classes, scores = yolov5_post_process(input_data)   #处理模型结果
+
+            if boxes is not None:
+                tmp = str(count) + ',' + str((time2-time1)*1000) + ',' + draw(img, boxes, scores, classes) +'\n'           #如果有检测结果，则进行绘图并按照赛题格式要求返回所有标签与坐标信息
+            else:
+                tmp = str(count) + ',' + str((time2-time1)*1000) + '\n'
+
+            f.write(tmp)
+
+            cv2.imwrite('./result/'+str(count)+'.jpg',img)
+            count+=1
+            ret, img = capture.read()  #抽取下一帧
+    '''
     # Inference
     print('--> Running model')
     outputs = rknn.inference(inputs=[img])
@@ -316,5 +363,6 @@ if __name__ == '__main__':
     #cv2.imshow("post process result", img_1)
     cv2.imwrite("./re.jpg", img_1)
     #cv2.waitKeyEx(0)
+    '''
 
     rknn.release()
