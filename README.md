@@ -1,6 +1,6 @@
 
 
-# 《面向自动驾驶场景的YOLOv5目标检测方法》 项目开发文档
+
 
 
 
@@ -243,7 +243,7 @@ capture = cv2.VideoCapture('video.mp4')  # 读取视频
 python traffic_detect_video.py
 ```
 
-**根据组委会的要求，在当前目录下将会生成result.txt。**
+**在当前目录下将会生成result.txt。**
 
 注意：当前目录下已经存在result.txt,这是我们根据示例视频推理后生成的结果，如果运行上面的推理视频代码，则会覆盖此result.txt。
 
